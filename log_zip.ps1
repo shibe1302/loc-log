@@ -17,7 +17,7 @@ function pr {
     )
     Write-Host "=========== $p ============" -ForegroundColor Cyan
 }
-#================= ham join path va move ===================
+
 
 
 
