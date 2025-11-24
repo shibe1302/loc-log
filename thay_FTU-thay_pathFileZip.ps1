@@ -8,17 +8,23 @@
 
 
 # link đến file zip hoặc link folder sau khi giải nén filezip(vào bên trong folder rồi copy link)
-$FilePath= "C:\Users\shibe\Desktop\test_cp\USWPM48PT01-giet-tool.7z"
-$FTU="FTU_USW_PROMAX-SERIES_1.0.3_7.0.50"
-$FCD="FCD_USW_PROMAX-SERIES_1.0.2_7.0.50"
+# param(
+#     [string]$FilePath,
+#     [string]$FTU,
+#     [string]$FCD
+# )
+$FilePath="C:\Users\shibe\Desktop\test_cp\USWPM48PT01-giet-tool\USWPM48PT01_109pcs_2643013075_log"
+
 if (Test-Path $FilePath -PathType Container) {
-    & .\log_no_zip.ps1 -LOG_DIR $FilePath -FCD $FCD -FTU $FTU
+    & .\log_no_zip.ps1 -LOG_DIR $FilePath
 }
 elseif (Test-Path $FilePath -PathType Leaf) {
-    & .\log_zip.ps1 -zipFile $FilePath -FCD $FCD -FTU $FTU
-}else {
+    & .\log_zip.ps1 -zipFile $FilePath
+}
+else {
     Write-Host "Path khong ton tai. Vui long kiem tra lai!" -ForegroundColor Red
     exit
 }
+
 
 
