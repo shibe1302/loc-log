@@ -407,6 +407,14 @@ foreach ($tram in $cac_tram_test) {
     $folderPath_P = Join-Path $passFolder $tram
     $total_duplicate += remove_duplicate_mac -tramFolder $folderPath_P
 }
+#================= Loại bỏ trùng MAC trong folder 600I_Files ===================
+foreach ($tram in $cac_tram_test) {
+    $folderPath_P = Join-Path $passFolder $tram
+    $folder600I = Join-Path $folderPath_P "600I_Files"
+    if (Test-Path $folder600I) {
+        remove_duplicate_mac -tramFolder $folder600I
+    }
+}
 
 Write-Host "`n`n"
 Write-Host "============ TONG HOP SO LIEU =============" -ForegroundColor Green

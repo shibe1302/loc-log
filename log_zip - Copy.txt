@@ -205,8 +205,6 @@ $log_files = Get-ChildItem -Path $final_LOG_FOLDER -File
 
 #================= Phan loai log pass ===================
 $count_pass = 0
-$count_wrong_version = 0
-$total_duplicate = 0
 foreach ($_ in $log_files) {
     switch -regex ($_) {
         "^PASS.*_DOWNLOAD_" { join_and_move_pass -log_dir $final_LOG_FOLDER -file_name $_ -state "DL"; $count_pass++; break }
@@ -321,8 +319,6 @@ foreach ($tram in $cac_tram_test) {
                 try {
                     Move-Item -Path $f.FullName -Destination $wrongVersionFolder -Force
                     Write-Host "Moved wrong version file $($f.Name) from $tram to WRONG_VERSION" -ForegroundColor Magenta
-                    # Tang bien dem file sai version
-                    $count_wrong_version++
                 }
                 catch {
                     Write-Host "Error moving file $($f.FullName)" -ForegroundColor Red
@@ -367,8 +363,6 @@ function remove_duplicate_mac {
                 try {
                     Move-Item -Path $dup.FullName -Destination $duplicateMacFolder -Force
                     Write-Host "Moved duplicate MAC file $($dup.Name) (tram $tramFolder)" -ForegroundColor Yellow
-                    # Tang bien dem file bi trung MAC (dung script: scope de cap nhat tu trong ham)
-                    $script:total_duplicate++
                 }
                 catch {
                     Write-Host "Error moving duplicate file $($dup.FullName)" -ForegroundColor Red
@@ -382,15 +376,6 @@ foreach ($tram in $cac_tram_test) {
     $folderPath_P = Join-Path $passFolder $tram
     remove_duplicate_mac -tramFolder $folderPath_P
 }
-#================= Loại bỏ trùng MAC trong folder 600I_Files ===================
-foreach ($tram in $cac_tram_test) {
-    $folderPath_P = Join-Path $passFolder $tram
-    $folder600I = Join-Path $folderPath_P "600I_Files"
-    if (Test-Path $folder600I) {
-        remove_duplicate_mac -tramFolder $folder600I
-    }
-}
-
 
 Write-Host "`n`n"
 Write-Host "============ Tong hop so lieu ============="
@@ -408,12 +393,9 @@ foreach ($tram in $cac_tram_test) {
 
 Write-Host "`n======================================"
 try {
-    pr -p "PASS: $count_pass"
-    pr -p "FAIL: $count_fail"
-    pr -p "SAI FTU/FCD: $count_wrong_version"
-    pr -p "TRUNG MAC: $total_duplicate"
-    pr -p "So file log truoc khi xu li: $Tong_file_log"
-    pr -p "Tong so file da xu li: $($count_pass + $count_fail)"
+    pr -p "pass: $count_pass"
+    pr -p "fail: $count_fail"
+    pr -p "So file log truoc khi xu li : $Tong_file_log"
 }
 catch {
     Write-Host "Error when printing summary: $_" -ForegroundColor Red

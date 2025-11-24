@@ -13,7 +13,7 @@
 #     [string]$FTU,
 #     [string]$FCD
 # )
-$FilePath="C:\Users\shibe\Desktop\test_cp\USWPM48PT01-giet-tool\USWPM48PT01_109pcs_2643013075_log"
+$FilePath="C:\Users\shibe\Desktop\test_cp\USWPM48PT01-giet-tool.7z"
 
 if (Test-Path $FilePath -PathType Container) {
     & .\log_no_zip.ps1 -LOG_DIR $FilePath
