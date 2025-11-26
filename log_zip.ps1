@@ -158,7 +158,7 @@ $passFolder = Join-Path $parent_of_log "PASS"
 $failFolder = Join-Path $parent_of_log "FAIL"
 New-Item -Path $passFolder -ItemType Directory -Force | Out-Null
 New-Item -Path $failFolder -ItemType Directory -Force | Out-Null
-$cac_tram_test = @("DL","PT0" ,"PT", "PT1", "PT2", "PT3", "PT4", "BURN", "FT1", "FT2", "FT3", "FT4", "FT5", "FT6")
+$cac_tram_test = @("DL", "PT", "PT0", "PT1", "PT2", "PT3", "PT4", "BURN", "FT1", "FT2", "FT3", "FT4", "FT5", "FT6")
 $cac_tram_test | ForEach-Object {
     New-Item -Path (Join-Path $passFolder $_) -ItemType Directory -Force | Out-Null
     New-Item -Path (Join-Path $failFolder $_) -ItemType Directory -Force | Out-Null
@@ -283,7 +283,7 @@ foreach ($tram in $cac_tram_test) {
         $files600I = Get-ChildItem -Path $folderPath_P -File -Filter "*_600I_*" -ErrorAction SilentlyContinue
         if ($files600I -and $files600I.Count -gt 0) {
             $newFolder = Join-Path $folderPath_P "600I_Files"
-            $path_600I=$newFolder
+            $path_600I=$nameFolder
             New-Item -Path $newFolder -ItemType Directory -Force | Out-Null
             foreach ($f in $files600I) {
                 try { Move-Item -Path $f.FullName -Destination $newFolder -Force }
@@ -421,6 +421,7 @@ if ([string]::IsNullOrWhiteSpace($path_600I)) {
 else {
     remove_duplicate_mac -tramFolder $path_600I
 }
+
 
 Write-Host "`n`n"
 Write-Host "============ Tong hop so lieu ============="
