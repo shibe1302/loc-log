@@ -71,30 +71,47 @@ function Auto-Detect-Version {
 #================= giai nen file va don dep ===================
 $nameFolder = [System.IO.Path]::GetFileNameWithoutExtension($zipFile)
 $folder_containing_zip = Split-Path $zipFile
-Get-ChildItem -Path $folder_containing_zip -Directory | Remove-Item -Recurse -Force
+
+# Kiểm tra và xóa folder loc_log nếu tồn tại
+$locLogPath = Join-Path -Path $folder_containing_zip -ChildPath "loc_log"
+if (Test-Path $locLogPath) {
+    Write-Host "Đang xóa folder loc_log cũ..."
+    Remove-Item -Path $locLogPath -Recurse -Force
+}
+
+# Tạo folder loc_log mới
+Write-Host "Tạo folder loc_log..."
+New-Item -Path $locLogPath -ItemType Directory -Force | Out-Null
+
 pr -p $zipFile
 pr -p $nameFolder
-& "C:\Program Files\7-Zip\7z.exe" x $zipFile -aoa -o"$folder_containing_zip" -y
+
+# Giải nén vào folder loc_log
+Write-Host "Đang giải nén..."
+& "C:\Program Files\7-Zip\7z.exe" x $zipFile -aoa -o"$locLogPath" -y
 
 #================= Tim folder LOG ===================
-$final_LOG_FOLDER = "cac"
-$LOG_DIR = (Get-Item $zipFile).DirectoryName
-$found = Get-ChildItem -Path $LOG_DIR -Recurse -Directory -ErrorAction SilentlyContinue |
-Where-Object { $_.Name -imatch "^log$" }
+$locLogPath = Join-Path -Path $folder_containing_zip -ChildPath "loc_log"
+
+# Tìm folder có tên là "log" hoặc "LOG" trong loc_log
+$found = Get-ChildItem -Path $locLogPath -Recurse -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -imatch "^log$" }
 
 if ($found) {
     $final_LOG_FOLDER = $found[0].FullName
-    Write-Host "Da tim thay folder log !" -ForegroundColor Green
+    Write-Host "Da tim thay folder log: $final_LOG_FOLDER" -ForegroundColor Green
 }
 else {
-    Write-Host "Khong tim thay folder log !" -ForegroundColor Yellow
-    Write-Host "Hay dat ten folder chua file LOG thanh LOG hoac log !" -ForegroundColor Yellow
+    Write-Host "Khong tim thay folder log trong loc_log!" -ForegroundColor Yellow
+    Write-Host "Hay dam bao file zip chua folder LOG hoac log!" -ForegroundColor Yellow
     exit
 }
 
 $parent_of_log = (Get-Item $final_LOG_FOLDER).Parent.FullName
-Write-Output $parent_of_log
-$Tong_file_log = (Get-Item $final_LOG_FOLDER).GetFiles().Count
+Write-Output "Parent cua log: $parent_of_log"
+
+$Tong_file_log = (Get-ChildItem -Path $final_LOG_FOLDER -File).Count
+Write-Output "Tong so file log: $Tong_file_log"
 
 #================= TU DONG PHAT HIEN FTU VA FCD ===================
 Write-Host "`n"
@@ -141,7 +158,7 @@ $passFolder = Join-Path $parent_of_log "PASS"
 $failFolder = Join-Path $parent_of_log "FAIL"
 New-Item -Path $passFolder -ItemType Directory -Force | Out-Null
 New-Item -Path $failFolder -ItemType Directory -Force | Out-Null
-$cac_tram_test = @("DL", "PT", "PT1", "PT2", "PT3", "PT4", "BURN", "FT1", "FT2", "FT3", "FT4", "FT5", "FT6")
+$cac_tram_test = @("DL","PT0" ,"PT", "PT1", "PT2", "PT3", "PT4", "BURN", "FT1", "FT2", "FT3", "FT4", "FT5", "FT6")
 $cac_tram_test | ForEach-Object {
     New-Item -Path (Join-Path $passFolder $_) -ItemType Directory -Force | Out-Null
     New-Item -Path (Join-Path $failFolder $_) -ItemType Directory -Force | Out-Null
@@ -210,6 +227,7 @@ $total_duplicate = 0
 foreach ($_ in $log_files) {
     switch -regex ($_) {
         "^PASS.*_DOWNLOAD_" { join_and_move_pass -log_dir $final_LOG_FOLDER -file_name $_ -state "DL"; $count_pass++; break }
+        "^PASS.*_PT0_" { join_and_move_pass -log_dir $final_LOG_FOLDER -file_name $_ -state "PT0"; $count_pass++; break }
         "^PASS.*_PT1_" { join_and_move_pass -log_dir $final_LOG_FOLDER -file_name $_ -state "PT1"; $count_pass++; break }
         "^PASS.*_PT2_" { join_and_move_pass -log_dir $final_LOG_FOLDER -file_name $_ -state "PT2"; $count_pass++; break }
         "^PASS.*_PT3_" { join_and_move_pass -log_dir $final_LOG_FOLDER -file_name $_ -state "PT3"; $count_pass++; break }
@@ -230,6 +248,7 @@ $count_fail = 0
 foreach ($_ in $log_files) {
     switch -regex ($_) {
         "^FAIL.*_DOWNLOAD_" { join_and_move_fail -log_dir $final_LOG_FOLDER -file_name $_ -state "DL"; $count_fail++; break }
+        "^FAIL.*_PT0_" { join_and_move_fail -log_dir $final_LOG_FOLDER -file_name $_ -state "PT0"; $count_fail++; break }
         "^FAIL.*_PT1_" { join_and_move_fail -log_dir $final_LOG_FOLDER -file_name $_ -state "PT1"; $count_fail++; break }
         "^FAIL.*_PT2_" { join_and_move_fail -log_dir $final_LOG_FOLDER -file_name $_ -state "PT2"; $count_fail++; break }
         "^FAIL.*_PT3_" { join_and_move_fail -log_dir $final_LOG_FOLDER -file_name $_ -state "PT3"; $count_fail++; break }
@@ -257,12 +276,14 @@ foreach ($tram in $cac_tram_test) {
 }
 
 # =================== Gom file 600I vào folder riêng ======================
+$path_600I=""
 foreach ($tram in $cac_tram_test) {
     $folderPath_P = Join-Path $passFolder $tram
     if (Test-Path $folderPath_P) {
         $files600I = Get-ChildItem -Path $folderPath_P -File -Filter "*_600I_*" -ErrorAction SilentlyContinue
         if ($files600I -and $files600I.Count -gt 0) {
             $newFolder = Join-Path $folderPath_P "600I_Files"
+            $path_600I=$newFolder
             New-Item -Path $newFolder -ItemType Directory -Force | Out-Null
             foreach ($f in $files600I) {
                 try { Move-Item -Path $f.FullName -Destination $newFolder -Force }
@@ -349,14 +370,14 @@ function remove_duplicate_mac {
                 Where-Object { $_.Extension -in @(".log", ".txt") }
 
     $groups = $logFiles | Group-Object {
-        if ($_.Name -match "PASS_([0-9A-F]{12})_") { $matches[1] }
+        if ($_.Name -match "(_[^_]+_)") { $matches[1] }
         else { "NO_MAC" }
     }
 
     foreach ($g in $groups) {
         if ($g.Count -gt 1 -and $g.Name -ne "NO_MAC") {
             $sorted = $g.Group | Sort-Object {
-                if ($_.Name -match "_(\d{14})_") { [int64]$matches[1] }
+                if ($_.Name -match "_(\d{14})") { [int64]$matches[1] }
                 else { 0 }
             } -Descending
 
@@ -378,19 +399,28 @@ function remove_duplicate_mac {
     }
 }
 
+#================= Áp dụng cho tất cả trạm PASS ===================
 foreach ($tram in $cac_tram_test) {
-    $folderPath_P = Join-Path $passFolder $tram
-    remove_duplicate_mac -tramFolder $folderPath_P
-}
-#================= Loại bỏ trùng MAC trong folder 600I_Files ===================
-foreach ($tram in $cac_tram_test) {
-    $folderPath_P = Join-Path $passFolder $tram
-    $folder600I = Join-Path $folderPath_P "600I_Files"
-    if (Test-Path $folder600I) {
-        remove_duplicate_mac -tramFolder $folder600I
+    if ([string]::IsNullOrWhiteSpace($cac_tram_test)) {
+        Write-Warning "Folder is null or empty, skipping..."
     }
-}
+    else {
+        $folderPath_P = Join-Path $passFolder $tram
+        remove_duplicate_mac -tramFolder $folderPath_P
+    }
 
+
+
+}
+#================= 600I remove dup mac===================
+    
+if ([string]::IsNullOrWhiteSpace($path_600I)) {
+    Write-Warning "Folder is null or empty, skipping..."
+    
+}
+else {
+    remove_duplicate_mac -tramFolder $path_600I
+}
 
 Write-Host "`n`n"
 Write-Host "============ Tong hop so lieu ============="
